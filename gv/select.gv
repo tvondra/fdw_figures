@@ -1,0 +1,63 @@
+digraph G {
+
+	subgraph main {
+	
+		node[shape=box];
+		
+		GetForeignRelSize [label="GetForeignRelSize : void"];
+		GetForeignPaths [label="GetForeignPaths : void"];
+		GetForeignPlan [label="GetForeignPlan : ForeignPlan"];
+		BeginForeignScan [label="BeginForeignScan : void"];
+		IterateForeignScan [label="IterateForeignScan : TupleTableSlot"];
+		EndForeignScan [label="EndForeignScan : void"];
+		
+		GetForeignRelSize -> GetForeignPaths
+			-> GetForeignPlan -> BeginForeignScan
+			-> IterateForeignScan -> IterateForeignScan
+			-> EndForeignScan [weight=100];
+	}
+	
+	subgraph data {
+	
+		node[color=blue, shape=box, style=rounded];
+		
+		BaserelEstimates [label="baserel->[rows, width]"];
+		BaserelFDWPrivate [label="baserel->fdw_private"];
+		BaserelPaths [label="paths in baserel"];
+		FDWState [label="node->fdw_state"];
+		BaserelFDWPrivate2 [label="baserel->fdw_private"];
+		
+		PlanFDWPrivate [label="fsplan->fdw_private"];
+		
+		Plan [label="plan"];
+		NodePlan [label="node->ss.ps.plan"];
+		
+	}
+	
+	subgraph communication {
+	
+		edge[style=dotted];
+		
+		GetForeignRelSize -> BaserelFDWPrivate;
+		GetForeignRelSize -> BaserelEstimates;
+		BaserelFDWPrivate -> GetForeignPaths;
+		BaserelFDWPrivate -> GetForeignPlan;
+		GetForeignPaths   -> BaserelPaths;
+		
+		BaserelPaths      -> GetForeignPlan;
+		GetForeignPlan    -> Plan;
+		GetForeignPlan    -> BaserelFDWPrivate2;
+		
+		Plan              -> NodePlan;
+		BaserelFDWPrivate2 -> PlanFDWPrivate;
+		NodePlan          -> BeginForeignScan;
+		PlanFDWPrivate    -> BeginForeignScan;
+		
+		BeginForeignScan  -> FDWState;
+		
+		FDWState -> IterateForeignScan;
+		FDWState -> EndForeignScan;
+		
+	}
+
+}
